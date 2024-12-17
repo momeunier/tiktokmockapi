@@ -187,17 +187,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("\n=== Sending Response ===");
     console.log("Response Data:", JSON.stringify(response, null, 2));
     return res.status(200).json(response);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("\n=== Error Details ===");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+    console.error(
+      "Error name:",
+      error instanceof Error ? error.name : "Unknown"
+    );
+    console.error(
+      "Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     console.error("Request query:", req.query);
 
     return res.status(400).json({
       code: 40001,
       message:
-        error instanceof Error ? error.message : "Invalid request parameters",
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "Invalid request parameters",
       request_id: generateId(32),
       data: {},
     });
