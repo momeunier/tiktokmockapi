@@ -1,9 +1,6 @@
-import express from "express";
+import { VercelRequest, VercelResponse } from "@vercel/node";
 
-const app = express();
-const port = process.env.MOCK_TIKTOK_PORT || 4000;
-
-// Utility function to generate random IDs (replacing the external generateId import)
+// Utility function to generate random IDs
 function generateId(length: number = 24): string {
   const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -33,7 +30,6 @@ function generateMetrics(requestedMetrics: string[]) {
     video_views_p100: { min: 100, max: 10000 },
   };
 
-  // Generate values for requested metrics
   requestedMetrics.forEach((metric) => {
     if (baseValues[metric as keyof typeof baseValues]) {
       const { min, max } = baseValues[metric as keyof typeof baseValues];
@@ -41,7 +37,7 @@ function generateMetrics(requestedMetrics: string[]) {
         Math.random() * (max - min) + min
       ).toString();
     } else {
-      metrics[metric] = "0"; // Default value for unknown metrics
+      metrics[metric] = "0";
     }
   });
 
@@ -54,7 +50,6 @@ function generateMockData(
   infoFields: string[],
   metricsFields: string[]
 ) {
-  // Generate one response for each material ID
   return materialIds.map((materialId) => {
     return {
       metrics: generateMetrics(metricsFields),
@@ -76,32 +71,26 @@ function generateMockData(
   });
 }
 
-// Enable CORS for all routes
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Access-Token"
   );
-  next();
-});
 
-// Add logging middleware for all requests
-app.use((req, res, next) => {
-  console.log("\n=== Incoming Request ===");
-  console.log(`${new Date().toISOString()}`);
-  console.log(`Method: ${req.method}`);
-  console.log(`Path: ${req.path}`);
-  console.log("Headers:", req.headers);
-  console.log("Query Parameters:", req.query);
-  console.log("======================\n");
-  next();
-});
+  // Only allow GET requests
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      code: 40500,
+      message: "Method not allowed",
+      request_id: generateId(32),
+      data: {},
+    });
+  }
 
-// Main endpoint that mimics TikTok's creative report API
-app.get("/open_api/v1.3/creative/report/get", (req, res) => {
   console.log("\n=== Processing Creative Report Request ===");
-  console.log("Raw query parameters:", req.query);
+  console.log("Query parameters:", req.query);
 
   const {
     advertiser_id,
@@ -116,19 +105,10 @@ app.get("/open_api/v1.3/creative/report/get", (req, res) => {
     filtering,
   } = req.query;
 
-  console.log("Advertiser ID:", advertiser_id);
-  console.log("Material Type:", material_type);
-  console.log("Lifetime:", lifetime);
-  console.log("Info Fields:", info_fields);
-  console.log("Metrics Fields:", metrics_fields);
-
   try {
     // Parse fields
     const parsedInfoFields = JSON.parse(info_fields as string);
     const parsedMetricsFields = JSON.parse(metrics_fields as string);
-
-    console.log("Parsed Info Fields:", parsedInfoFields);
-    console.log("Parsed Metrics Fields:", parsedMetricsFields);
 
     // Get material_ids from filtering
     let materialIds: string[] = [];
@@ -139,7 +119,6 @@ app.get("/open_api/v1.3/creative/report/get", (req, res) => {
         Array.isArray(parsedFiltering.material_id)
       ) {
         materialIds = parsedFiltering.material_id;
-        console.log("Using material IDs from request:", materialIds);
       } else {
         throw new Error(
           "material_id must be provided as an array in the filtering parameter"
@@ -149,7 +128,7 @@ app.get("/open_api/v1.3/creative/report/get", (req, res) => {
       throw new Error("filtering parameter with material_id array is required");
     }
 
-    // Generate mock data for each material ID
+    // Generate mock data
     const mockData = generateMockData(
       materialIds,
       parsedInfoFields,
@@ -172,23 +151,10 @@ app.get("/open_api/v1.3/creative/report/get", (req, res) => {
       },
     };
 
-    console.log("\n=== Sending Response ===");
-    console.log("Response Data:", JSON.stringify(response, null, 2));
-    console.log("\nMetrics Details:");
-    response.data.list.forEach((item, index) => {
-      console.log(`\nItem ${index + 1}:`);
-      console.log("Material ID:", item.info.material_id);
-      console.log("Video ID:", item.info.video_id);
-      console.log("Metrics:", JSON.stringify(item.metrics, null, 2));
-    });
-    console.log("========================\n");
-
-    res.json(response);
+    return res.status(200).json(response);
   } catch (error) {
-    console.error("\n=== Error Processing Request ===");
-    console.error("Error:", error);
-    console.error("=============================\n");
-    res.status(400).json({
+    console.error("Error processing request:", error);
+    return res.status(400).json({
       code: 40001,
       message:
         error instanceof Error ? error.message : "Invalid request parameters",
@@ -196,11 +162,4 @@ app.get("/open_api/v1.3/creative/report/get", (req, res) => {
       data: {},
     });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Mock TikTok API server running at http://localhost:${port}`);
-  console.log(
-    `Ready to handle creative report requests at /open_api/v1.3/creative/report/get`
-  );
-});
+}
