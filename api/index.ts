@@ -72,12 +72,25 @@ function generateMockData(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log("\n=== Incoming Request ===");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
+  console.log("Headers:", req.headers);
+  console.log("Query:", req.query);
+  console.log("======================\n");
+
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Access-Token"
   );
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+
+  // Handle OPTIONS request
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   // Only handle GET requests
   if (req.method !== "GET") {
