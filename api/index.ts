@@ -72,12 +72,21 @@ function generateMockData(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  console.log("\n=== Incoming Request ===");
+  // Add startup log
+  console.log(`\n=== Function Invoked at ${new Date().toISOString()} ===`);
+  console.log("Environment:", process.env.VERCEL_ENV);
+  console.log("Region:", process.env.VERCEL_REGION);
+
+  // Request details
+  console.log("\n=== Request Details ===");
   console.log("Method:", req.method);
   console.log("URL:", req.url);
-  console.log("Headers:", req.headers);
-  console.log("Query:", req.query);
-  console.log("======================\n");
+  console.log(
+    "Path:",
+    req.url ? new URL(req.url, "http://localhost").pathname : "No URL"
+  );
+  console.log("Query Parameters:", JSON.stringify(req.query, null, 2));
+  console.log("Headers:", JSON.stringify(req.headers, null, 2));
 
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -119,9 +128,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } = req.query;
 
   try {
-    // Parse fields
+    // Add more detailed logging in the try block
+    console.log("\n=== Processing Request ===");
+    console.log("Parsing info_fields:", info_fields);
     const parsedInfoFields = JSON.parse(info_fields as string);
+    console.log("Parsed info_fields:", parsedInfoFields);
+
+    console.log("Parsing metrics_fields:", metrics_fields);
     const parsedMetricsFields = JSON.parse(metrics_fields as string);
+    console.log("Parsed metrics_fields:", parsedMetricsFields);
+
+    console.log("Parsing filtering:", filtering);
+    const parsedFiltering = JSON.parse(filtering as string);
+    console.log("Parsed filtering:", parsedFiltering);
 
     // Get material_ids from filtering
     let materialIds: string[] = [];
@@ -169,8 +188,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("Response Data:", JSON.stringify(response, null, 2));
     return res.status(200).json(response);
   } catch (error) {
-    console.error("\n=== Error Processing Request ===");
-    console.error("Error:", error);
+    console.error("\n=== Error Details ===");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Request query:", req.query);
+
     return res.status(400).json({
       code: 40001,
       message:

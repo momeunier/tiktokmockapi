@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/health",
+      "dest": "/api/health"
+    },
+    {
       "src": "/open_api/v1.3/creative/report/get",
       "methods": ["GET", "OPTIONS"],
       "dest": "/api/index"
