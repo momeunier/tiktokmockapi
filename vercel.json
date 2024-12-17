@@ -8,13 +8,23 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "dest": "api/root.ts"
+    },
+    {
       "src": "/health",
-      "dest": "/api/health"
+      "dest": "api/health.ts"
     },
     {
       "src": "/open_api/v1.3/creative/report/get",
       "methods": ["GET", "OPTIONS"],
-      "dest": "/api/index"
+      "dest": "api/index.ts"
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
