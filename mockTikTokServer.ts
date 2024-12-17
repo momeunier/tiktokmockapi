@@ -1,7 +1,7 @@
 import express from "express";
 
 const app = express();
-const port = process.env.MOCK_TIKTOK_PORT || 3001;
+const port = process.env.MOCK_TIKTOK_PORT || 8080;
 
 // Utility function to generate random IDs (replacing the external generateId import)
 function generateId(length: number = 24): string {
